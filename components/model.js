@@ -34,6 +34,14 @@ class Model extends ORM.ActiveRecord {
   }
 
   /**
+   * Returns list of relations restricted for extended output
+   * @return {Array}
+   */
+  static get restricted_for_output () {
+    return []
+  }
+
+  /**
    * Returns list of fields restricted for lookup
    * @return {Array}
    */
@@ -136,8 +144,17 @@ class Model extends ORM.ActiveRecord {
     await this._preSaveAfterValidation()
   }
 
+  /**
+   * Custom functionality before saving (before validation)
+   * @return {Promise<void>}
+   * @private
+   */
   async _preSaveBeforeValidation () {}
 
+  /**
+   * Validate object's data
+   * @return {Promise<void>}
+   */
   async validate () {
     if (this.constructor.validation_rules) {
       validate(await this.constructor.validation_rules, this.data)
@@ -146,8 +163,20 @@ class Model extends ORM.ActiveRecord {
     }
   }
 
+  /**
+   * Custom functionality before saving (after validation)
+   * @return {Promise<void>}
+   * @private
+   */
   async _preSaveAfterValidation () {}
 
+  /**
+   * Returns object by ID if it exists and accessible by user
+   * @param id
+   * @param user
+   * @param write
+   * @return {Promise<ActiveRecord>}
+   */
   static async findAndCheckAccessOrDie(id, user, write=false) {
     const obj = await this.find(id)
     if (!obj) {
@@ -159,9 +188,50 @@ class Model extends ORM.ActiveRecord {
     return obj
   }
 
+  /**
+   * Returns is object accessible by user
+   * @param user
+   * @param write
+   * @return {Promise<boolean>}
+   */
   async accessible(user, write=false) {
     return !write
   }
+
+  /**
+   * Returns public data of the object
+   * @return Object
+   */
+  get output () {
+    return {
+      'id': this.id
+    }
+  }
+
+  /**
+   * Returns public data of the object with relations
+   * @param required_relations
+   * @param mode
+   * @return {Promise<Object>}
+   */
+  async getExtendedOutput(required_relations=[], mode = null) {
+    const output = this.output
+    let rel_data, rel_mode, rel_relations
+    for (let name of required_relations){
+      if (name.split(':').length > 1) continue
+      if (this.constructor.restricted_for_output.includes(name)) {
+        throw new Error(`Relation "${name}" is not allowed for extended output of model ${this.constructor.name}`)
+      }
+      rel_data = await this.rel(name)
+      rel_mode = `relation:${this.constructor.name.toLowerCase()}.${name}`
+      rel_relations = required_relations.filter(v => v.startsWith(`${name}:`)).map(v => v.substr(name.length + 1))
+      output[`:${name}`] = Array.isArray(rel_data)
+        ? await Promise.all(rel_data.map(v => v.getExtendedOutput(rel_relations, rel_mode)))
+        : await rel_data.getExtendedOutput(rel_relations, rel_mode)
+    }
+    return output
+  }
+
 
 }
 
