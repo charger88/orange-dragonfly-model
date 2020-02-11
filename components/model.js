@@ -209,13 +209,22 @@ class Model extends ORM.ActiveRecord {
   }
 
   /**
+   * Format output
+   * @param mode
+   * @return {Object}
+   */
+  formatOutput (mode) {
+    return this.output
+  }
+
+  /**
    * Returns public data of the object with relations
    * @param required_relations
    * @param mode
    * @return {Promise<Object>}
    */
   async getExtendedOutput(required_relations=[], mode = null) {
-    const output = this.output
+    const output = this.formatOutput(mode)
     let rel_data, rel_mode, rel_relations
     for (let name of required_relations){
       if (name.split(':').length > 1) continue
@@ -223,7 +232,7 @@ class Model extends ORM.ActiveRecord {
         throw new Error(`Relation "${name}" is not allowed for extended output of model ${this.constructor.name}`)
       }
       rel_data = await this.rel(name)
-      rel_mode = `relation:${this.constructor.name.toLowerCase()}.${name}`
+      rel_mode = `relation:${this.constructor.name}.${name}`
       rel_relations = required_relations.filter(v => v.startsWith(`${name}:`)).map(v => v.substr(name.length + 1))
       output[`:${name}`] = Array.isArray(rel_data)
         ? await Promise.all(rel_data.map(v => v.getExtendedOutput(rel_relations, rel_mode)))
