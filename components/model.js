@@ -97,6 +97,7 @@ class Model extends ORM.ActiveRecord {
    * @return {Promise<ActiveRecord>}
    */
   static async create (data) {
+    const rules = this.validation_rules
     const new_data = {}
     for (let field of Object.keys(data)) {
       if (!rules.hasOwnProperty(field)) {
@@ -240,7 +241,6 @@ class Model extends ORM.ActiveRecord {
     }
     return output
   }
-
 
 }
 
