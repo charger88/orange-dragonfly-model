@@ -237,7 +237,7 @@ class Model extends ORM.ActiveRecord {
       rel_relations = required_relations.filter(v => v.startsWith(`${name}:`)).map(v => v.substr(name.length + 1))
       output[`:${name}`] = Array.isArray(rel_data)
         ? await Promise.all(rel_data.map(v => v.getExtendedOutput(rel_relations, rel_mode)))
-        : await rel_data.getExtendedOutput(rel_relations, rel_mode)
+        : (rel_data ? await rel_data.getExtendedOutput(rel_relations, rel_mode) : null)
     }
     return output
   }
