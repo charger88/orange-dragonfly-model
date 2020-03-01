@@ -1,6 +1,9 @@
 const ORM = require('orange-dragonfly-orm')
 const validate = require('orange-dragonfly-validator')
 
+class ValidationException extends Error {
+  info = {}
+}
 
 class Model extends ORM.ActiveRecord {
 
@@ -157,10 +160,27 @@ class Model extends ORM.ActiveRecord {
    * @return {Promise<void>}
    */
   async validate () {
-    if (this.constructor.validation_rules) {
-      validate(await this.constructor.validation_rules, this.data)
-    } else {
+    const rules = this.constructor.validation_rules
+    if (!rules) {
       throw new Error(`Validation rules are not defined for mode ${this.constructor.name}`)
+    }
+    validate(rules, this.data)
+    let rel
+    const relation_errors = []
+    for (let rel_name of Object.keys(this.constructor.available_relations)) {
+      rel = this.constructor.available_relations[rel_name]
+      if (rel.mode === 'parent') {
+        if (this.data.hasOwnProperty(rel._a_key_by_mode) && (this.data[rel._a_key_by_mode] !== null)) {
+          if ((await this.rel(rel_name)) === null) {
+            relation_errors.push(rel._a_key_by_mode)
+          }
+        }
+      }
+      if (relation_errors.length) {
+        const ex = new ValidationException()
+        for (let param of relation_errors) ex.info[param] = 'Parent object not found'
+        throw ex
+      }
     }
   }
 
