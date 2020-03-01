@@ -133,10 +133,10 @@ class Model extends ORM.ActiveRecord {
         if (this.constructor.IGNORE_EXTRA_FIELDS) {
           continue
         }
-        throw new Error(`Field "${field}" is not described for model ${this.name}`)
+        throw new Error(`Field "${field}" is not described for model ${this.constructor.name}`)
       }
       if (this.constructor.restricted_for_update.includes(field)) {
-        throw new Error(`Field "${field}" is restricted for updating model ${this.name}`)
+        throw new Error(`Field "${field}" is restricted for updating model ${this.constructor.name}`)
       }
       new_data[field] = data[field]
     }
