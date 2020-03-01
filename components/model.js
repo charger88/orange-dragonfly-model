@@ -126,6 +126,7 @@ class Model extends ORM.ActiveRecord {
     if (!this.id) {
       throw new Error(`You can update saved object only`)
     }
+    const rules = this.constructor.validation_rules
     const new_data = {}
     for (let field of Object.keys(data)) {
       if (!rules.hasOwnProperty(field)) {
@@ -163,6 +164,20 @@ class Model extends ORM.ActiveRecord {
     const rules = this.constructor.validation_rules
     if (!rules) {
       throw new Error(`Validation rules are not defined for mode ${this.constructor.name}`)
+    }
+    // Convert integer 1 or 0 to boolean
+    let types
+    for (let rule_name of Object.keys(rules)) {
+      if (this.data.hasOwnProperty(rule_name)) {
+        if (rules[rule_name].hasOwnProperty('type')) {
+          types = Array.isArray(rules[rule_name]['type']) ? rules[rule_name]['type'] : [rules[rule_name]['type']]
+          if (types.includes('boolean')) {
+            if ((this.data[rule_name] === 1) || (this.data[rule_name] === 0)) {
+              this.data[rule_name] = this.data[rule_name] === 1;
+            }
+          }
+        }
+      }
     }
     validate(rules, this.data)
     let rel
