@@ -82,12 +82,12 @@ class Model extends ORM.ActiveRecord {
         if (this.IGNORE_EXTRA_FIELDS) {
           continue
         }
-        const ex = ValidationException('Parameters error')
+        const ex = new ValidationException('Parameters error')
         ex.info[field] = `Field "${field}" is not described for model ${this.name}`
         throw ex
       }
       if (this.restricted_for_lookup.includes(field)) {
-        const ex = ValidationException('Parameters error')
+        const ex = new ValidationException('Parameters error')
         ex.info[field] = `Field "${field}" is restricted for searching model ${this.name}`
         throw ex
       }
@@ -111,12 +111,12 @@ class Model extends ORM.ActiveRecord {
         if (this.IGNORE_EXTRA_FIELDS) {
           continue
         }
-        const ex = ValidationException('Parameters error')
+        const ex = new ValidationException('Parameters error')
         ex.info[field] = `Field "${field}" is not described for model ${this.name}`
         throw ex
       }
       if (this.restricted_for_create.includes(field)) {
-        const ex = ValidationException('Parameters error')
+        const ex = new ValidationException('Parameters error')
         ex.info[field] = `Field "${field}" is restricted for creating model ${this.name}`
         throw ex
       }
@@ -141,12 +141,12 @@ class Model extends ORM.ActiveRecord {
         if (this.constructor.IGNORE_EXTRA_FIELDS) {
           continue
         }
-        const ex = ValidationException('Parameters error')
+        const ex = new ValidationException('Parameters error')
         ex.info[field] = `Field "${field}" is not described for model ${this.constructor.name}`
         throw ex
       }
       if (this.constructor.restricted_for_update.includes(field)) {
-        const ex = ValidationException('Parameters error')
+        const ex = new ValidationException('Parameters error')
         ex.info[field] = `Field "${field}" is restricted for updating model ${this.constructor.name}`
         throw ex
       }
