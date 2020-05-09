@@ -156,17 +156,9 @@ class Model extends ORM.ActiveRecord {
   }
 
   async _preSave () {
-    await this._preSaveBeforeValidation()
+    await super._preSave();
     await this.validate()
-    await this._preSaveAfterValidation()
   }
-
-  /**
-   * Custom functionality before saving (before validation)
-   * @return {Promise<void>}
-   * @private
-   */
-  async _preSaveBeforeValidation () {}
 
   /**
    * Validate object's data
@@ -210,13 +202,6 @@ class Model extends ORM.ActiveRecord {
       }
     }
   }
-
-  /**
-   * Custom functionality before saving (after validation)
-   * @return {Promise<void>}
-   * @private
-   */
-  async _preSaveAfterValidation () {}
 
   /**
    * Returns object by ID if it exists and accessible by user
