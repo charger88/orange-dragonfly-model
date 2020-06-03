@@ -189,14 +189,14 @@ class Model extends ORM.ActiveRecord {
     for (let rel_name of Object.keys(this.constructor.available_relations)) {
       rel = this.constructor.available_relations[rel_name]
       if (rel.mode === 'parent') {
-        if (this.data.hasOwnProperty(rel._a_key_by_mode) && (this.data[rel._a_key_by_mode] !== null)) {
+        if (this.data.hasOwnProperty(rel._a_key_by_mode) && (this.data[rel._a_key_by_mode] !== null) && (this.data[rel._a_key_by_mode] !== 0)) {
           if ((await this.rel(rel_name)) === null) {
             relation_errors.push(rel._a_key_by_mode)
           }
         }
       }
       if (relation_errors.length) {
-        const ex = new ValidationException()
+        const ex = new ValidationException(`Some relations of the ${this.constructor.name} are not found`)
         for (let param of relation_errors) ex.info[param] = 'Parent object not found'
         throw ex
       }
