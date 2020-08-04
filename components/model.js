@@ -156,6 +156,12 @@ class Model extends ORM.ActiveRecord {
   }
 
   async _preSave () {
+    if (this.constructor.IGNORE_EXTRA_FIELDS) {
+      const rules = this.constructor.validation_rules
+      for (let key of Object.keys(this.data).filter(v => !rules.hasOwnProperty(v))) {
+        delete this.data[key]
+      }
+    }
     await super._preSave();
     await this.validate()
   }
