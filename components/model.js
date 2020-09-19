@@ -213,16 +213,16 @@ class Model extends ORM.ActiveRecord {
    * Returns object by ID if it exists and accessible by user
    * @param id
    * @param user
-   * @param write
+   * @param mode
    * @return {Promise<ActiveRecord>}
    */
-  static async findAndCheckAccessOrDie(id, user, write=false) {
+  static async findAndCheckAccessOrDie(id, user, mode=null) {
     const obj = await this.find(id)
     if (!obj) {
       throw new Error(`${this.name} #${id} not found`)
     }
-    if (!(await obj.accessible(user, write))) {
-      throw new Error(`${this.name} #${id} is not accessible for ${write ? 'writing' : 'reading'} by the user`)
+    if (!(await obj.accessible(user, mode))) {
+      throw new Error(`${this.name} #${id} is not accessible${mode ? ` for ${mode}` : ''}`)
     }
     return obj
   }
@@ -230,11 +230,11 @@ class Model extends ORM.ActiveRecord {
   /**
    * Returns is object accessible by user
    * @param user
-   * @param write
+   * @param mode
    * @return {Promise<boolean>}
    */
-  async accessible(user, write=false) {
-    return !write
+  async accessible(user, mode=null) {
+    return mode === null
   }
 
   /**
