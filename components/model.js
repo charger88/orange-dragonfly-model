@@ -167,6 +167,14 @@ class Model extends ORM.ActiveRecord {
   }
 
   /**
+   * Performs custom validation - returns null (empty object) in case of successful validation or object of validation issues
+   * @return {Promise<null|Object>}
+   */
+  async custom_validation () {
+    return null;
+  }
+
+  /**
    * Validate object's data
    * @return {Promise<void>}
    */
@@ -190,6 +198,12 @@ class Model extends ORM.ActiveRecord {
       }
     }
     validate(rules, this.data)
+    const custom_validation_errors = await this.custom_validation()
+    if (custom_validation_errors && Object.keys(custom_validation_errors).length) {
+      const ex = new ValidationException('Validation failed')
+      for (let [param, message] of Object.entries(custom_validation_errors)) ex.info[param] = message
+      throw ex
+    }
     let rel
     const relation_errors = []
     for (let rel_name of Object.keys(this.constructor.available_relations)) {
