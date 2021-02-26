@@ -210,7 +210,7 @@ class Model extends ORM.ActiveRecord {
       rel = this.constructor.available_relations[rel_name]
       if (rel.mode === 'parent') {
         if (this.data.hasOwnProperty(rel._a_key_by_mode) && (this.data[rel._a_key_by_mode] !== null) && (this.data[rel._a_key_by_mode] !== 0)) {
-          if ((await this.rel(rel_name)) === null) {
+          if ((await this.rel(rel_name, true)) === null) {
             relation_errors.push(rel._a_key_by_mode)
           }
         }
