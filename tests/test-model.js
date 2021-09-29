@@ -1,11 +1,12 @@
+/* eslint-disable no-undef */
+
 const Model = require('../components/model')
 const ORM = require('orange-dragonfly-orm')
 
 class TestModel extends Model {
-
   static get available_relations () {
     return {
-      'child_test': ORM.Relation.parent(this, this),
+      child_test: ORM.Relation.parent(this, this)
     }
   }
 
@@ -19,13 +20,12 @@ class TestModel extends Model {
 
   get output () {
     return {
-      'id': this.id,
-      'username': this.data['username'],
-      'uuid': this.data['uuid'],
-      'constant_value': 'QWERTY'
+      id: this.id,
+      username: this.data.username,
+      uuid: this.data.uuid,
+      constant_value: 'QWERTY'
     }
   }
-
 }
 
 module.exports = TestModel

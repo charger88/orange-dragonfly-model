@@ -2,12 +2,15 @@ const ORM = require('orange-dragonfly-orm')
 const validate = require('orange-dragonfly-validator')
 
 class ValidationException extends Error {
-  info = {}
+  get info () {
+    return {}
+  }
 }
 
 class Model extends ORM.ActiveRecord {
-
-  static IGNORE_EXTRA_FIELDS = false
+  static get IGNORE_EXTRA_FIELDS () {
+    return false
+  }
 
   /**
    * Returns schema for the model (Orange Dragonfly Validator format)
@@ -15,10 +18,10 @@ class Model extends ORM.ActiveRecord {
    */
   static get validation_rules () {
     return {
-      "id": {
-        "required": false,
-        "type": "integer",
-        "min": 1
+      id: {
+        required: false,
+        type: 'integer',
+        min: 1
       }
     }
   }
@@ -30,7 +33,7 @@ class Model extends ORM.ActiveRecord {
   static get special_fields () {
     const rules = this.validation_rules
     const fields = []
-    for (let field of ['created_at', 'updated_at', 'deleted_at']) {
+    for (const field of ['created_at', 'updated_at', 'deleted_at']) {
       rules.hasOwnProperty(field) && fields.push(field)
     }
     return fields
@@ -77,7 +80,7 @@ class Model extends ORM.ActiveRecord {
     const rules = this.validation_rules
     const q = this.selectQuery()
     const filtered_rules = {}
-    for (let field of Object.keys(data)) {
+    for (const field of Object.keys(data)) {
       if (!rules.hasOwnProperty(field)) {
         if (this.IGNORE_EXTRA_FIELDS) {
           continue
@@ -92,7 +95,7 @@ class Model extends ORM.ActiveRecord {
         throw ex
       }
       q.where(field, data[field])
-      filtered_rules[field] = Array.isArray(data[field]) ? {'type': 'array', 'children': {'*': rules[field]}} : rules[field]
+      filtered_rules[field] = Array.isArray(data[field]) ? { type: 'array', children: { '*': rules[field] } } : rules[field]
     }
     validate(filtered_rules, data)
     return q
@@ -106,7 +109,7 @@ class Model extends ORM.ActiveRecord {
   static async create (data) {
     const rules = this.validation_rules
     const new_data = {}
-    for (let field of Object.keys(data)) {
+    for (const field of Object.keys(data)) {
       if (!rules.hasOwnProperty(field)) {
         if (this.IGNORE_EXTRA_FIELDS) {
           continue
@@ -132,11 +135,11 @@ class Model extends ORM.ActiveRecord {
    */
   async update (data) {
     if (!this.id) {
-      throw new Error(`You can update saved object only`)
+      throw new Error('You can update saved object only')
     }
     const rules = this.constructor.validation_rules
     const new_data = {}
-    for (let field of Object.keys(data)) {
+    for (const field of Object.keys(data)) {
       if (!rules.hasOwnProperty(field)) {
         if (this.constructor.IGNORE_EXTRA_FIELDS) {
           continue
@@ -158,11 +161,11 @@ class Model extends ORM.ActiveRecord {
   async _preSave () {
     if (this.constructor.IGNORE_EXTRA_FIELDS) {
       const rules = this.constructor.validation_rules
-      for (let key of Object.keys(this.data).filter(v => !rules.hasOwnProperty(v))) {
+      for (const key of Object.keys(this.data).filter(v => !rules.hasOwnProperty(v))) {
         delete this.data[key]
       }
     }
-    await super._preSave();
+    await super._preSave()
     await this.validate()
   }
 
@@ -171,7 +174,7 @@ class Model extends ORM.ActiveRecord {
    * @return {Promise<null|Object>}
    */
   async custom_validation () {
-    return null;
+    return null
   }
 
   /**
@@ -185,13 +188,13 @@ class Model extends ORM.ActiveRecord {
     }
     // Convert integer 1 or 0 to boolean
     let types
-    for (let rule_name of Object.keys(rules)) {
+    for (const rule_name of Object.keys(rules)) {
       if (this.data.hasOwnProperty(rule_name)) {
         if (rules[rule_name].hasOwnProperty('type')) {
-          types = Array.isArray(rules[rule_name]['type']) ? rules[rule_name]['type'] : [rules[rule_name]['type']]
+          types = Array.isArray(rules[rule_name].type) ? rules[rule_name].type : [rules[rule_name].type]
           if (types.includes('boolean')) {
             if ((this.data[rule_name] === 1) || (this.data[rule_name] === 0)) {
-              this.data[rule_name] = this.data[rule_name] === 1;
+              this.data[rule_name] = this.data[rule_name] === 1
             }
           }
         }
@@ -201,12 +204,12 @@ class Model extends ORM.ActiveRecord {
     const custom_validation_errors = await this.custom_validation()
     if (custom_validation_errors && Object.keys(custom_validation_errors).length) {
       const ex = new ValidationException('Validation failed')
-      for (let [param, message] of Object.entries(custom_validation_errors)) ex.info[param] = message
+      for (const [param, message] of Object.entries(custom_validation_errors)) ex.info[param] = message
       throw ex
     }
     let rel
     const relation_errors = []
-    for (let rel_name of Object.keys(this.constructor.available_relations)) {
+    for (const rel_name of Object.keys(this.constructor.available_relations)) {
       rel = this.constructor.available_relations[rel_name]
       if (rel.mode === 'parent') {
         if (this.data.hasOwnProperty(rel._a_key_by_mode) && (this.data[rel._a_key_by_mode] !== null) && (this.data[rel._a_key_by_mode] !== 0)) {
@@ -217,7 +220,7 @@ class Model extends ORM.ActiveRecord {
       }
       if (relation_errors.length) {
         const ex = new ValidationException(`Some relations of the ${this.constructor.name} are not found`)
-        for (let param of relation_errors) ex.info[param] = 'Parent object not found'
+        for (const param of relation_errors) ex.info[param] = 'Parent object not found'
         throw ex
       }
     }
@@ -230,7 +233,7 @@ class Model extends ORM.ActiveRecord {
    * @param mode
    * @return {Promise<ActiveRecord>}
    */
-  static async findAndCheckAccessOrDie(id, user, mode=null) {
+  static async findAndCheckAccessOrDie (id, user, mode = null) {
     const obj = await this.find(id)
     if (!obj) {
       throw new Error(`${this.name} #${id} not found`)
@@ -247,7 +250,7 @@ class Model extends ORM.ActiveRecord {
    * @param mode
    * @return {Promise<boolean>}
    */
-  async accessible(user, mode=null) {
+  async accessible (user, mode = null) {
     return mode === null
   }
 
@@ -257,7 +260,7 @@ class Model extends ORM.ActiveRecord {
    */
   get output () {
     return {
-      'id': this.id
+      id: this.id
     }
   }
 
@@ -276,10 +279,10 @@ class Model extends ORM.ActiveRecord {
    * @param mode
    * @return {Promise<Object>}
    */
-  async getExtendedOutput(required_relations=[], mode = null) {
+  async getExtendedOutput (required_relations = [], mode = null) {
     const output = this.formatOutput(mode)
     let rel_data, rel_mode, rel_relations
-    for (let name of required_relations){
+    for (const name of required_relations) {
       if (name.split(':').length > 1) continue
       if (this.constructor.restricted_for_output.includes(name)) {
         throw new Error(`Relation "${name}" is not allowed for extended output of model ${this.constructor.name}`)
@@ -293,7 +296,6 @@ class Model extends ORM.ActiveRecord {
     }
     return output
   }
-
 }
 
 module.exports = Model
