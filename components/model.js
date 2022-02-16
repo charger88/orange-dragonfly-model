@@ -13,6 +13,14 @@ class Model extends ORM.ActiveRecord {
   }
 
   /**
+   * Returns list of unique keys
+   * @returns Array[] List of unique keys
+   */
+  static get UNIQUE_KEYS () {
+    return []
+  }
+
+  /**
    * Returns schema for the model (Orange Dragonfly Validator format)
    * @return object
    */
@@ -158,6 +166,25 @@ class Model extends ORM.ActiveRecord {
     return await this.save(new_data)
   }
 
+  /**
+   * Checks uniqueness of the object based on UNIQUE_KEYS
+   */
+  async checkUniqueness (exception_mode = false) {
+    for (const fields of this.constructor.UNIQUE_KEYS) {
+      if (!await this.isUnique(fields)) {
+        if (exception_mode) {
+          const ex = new ValidationException('Object is not unique')
+          for (const field of fields) {
+            ex.info[field] = 'Part of the unique key'
+          }
+          throw ex
+        }
+        return false
+      }
+    }
+    return true
+  }
+
   async _preSave () {
     if (this.constructor.IGNORE_EXTRA_FIELDS) {
       const rules = this.constructor.validation_rules
@@ -166,6 +193,7 @@ class Model extends ORM.ActiveRecord {
       }
     }
     await super._preSave()
+    await this.checkUniqueness(true)
     await this.validate()
   }
 
