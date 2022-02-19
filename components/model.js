@@ -169,9 +169,9 @@ class Model extends ORM.ActiveRecord {
   /**
    * Checks uniqueness of the object based on UNIQUE_KEYS
    */
-  async checkUniqueness (exception_mode = false) {
+  async checkUniqueness (exception_mode = false, ignore_null = false) {
     for (const fields of this.constructor.UNIQUE_KEYS) {
-      if (!await this.isUnique(fields)) {
+      if (!await this.isUnique(fields, ignore_null)) {
         if (exception_mode) {
           const ex = new ValidationException('Object is not unique')
           for (const field of fields) {
@@ -193,7 +193,7 @@ class Model extends ORM.ActiveRecord {
       }
     }
     await super._preSave()
-    await this.checkUniqueness(true)
+    await this.checkUniqueness(true, true)
     await this.validate()
   }
 
