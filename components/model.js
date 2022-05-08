@@ -2,9 +2,7 @@ const ORM = require('orange-dragonfly-orm')
 const validate = require('orange-dragonfly-validator')
 
 class ValidationException extends Error {
-  get info () {
-    return {}
-  }
+  info = {}
 }
 
 class Model extends ORM.ActiveRecord {
