@@ -80,11 +80,12 @@ class Model extends ORM.ActiveRecord {
   /**
    * Lookup method
    * @param data
+   * @param {?FilteredQuery} basicQuery Query to be used for adding conditions automatically. By default new SelectQuery object will be created.
    * @return {SelectQuery}
    */
-  static lookupQuery (data) {
+  static lookupQuery (data, basicQuery = null) {
     const rules = this.validation_rules
-    const q = this.selectQuery()
+    const q = basicQuery || this.selectQuery()
     const filtered_rules = {}
     for (const field of Object.keys(data)) {
       if (!rules.hasOwnProperty(field)) {

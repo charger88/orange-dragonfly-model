@@ -10,6 +10,14 @@ test('select-id', () => {
   expect(q.params).toEqual(data)
 })
 
+test('delete-id', () => {
+  const data = [1]
+  const lookup_data = { id: data[0] }
+  const q = TestModel.lookupQuery(lookup_data, TestModel.deleteQuery()).buildRawSQL()
+  expect(q.sql).toBe('DELETE FROM test_model WHERE test_model.id = ?')
+  expect(q.params).toEqual(data)
+})
+
 test('select-id-multiple', () => {
   const data = [1, 2, 3]
   const lookup_data = { id: data }
