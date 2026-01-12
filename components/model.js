@@ -1,11 +1,8 @@
-const ORM = require('orange-dragonfly-orm')
+const { ActiveRecord } = require('orange-dragonfly-orm')
 const validate = require('orange-dragonfly-validator')
+const ValidationException = require('./validation-exception')
 
-class ValidationException extends Error {
-  info = {}
-}
-
-class Model extends ORM.ActiveRecord {
+class Model extends ActiveRecord {
   static get IGNORE_EXTRA_FIELDS () {
     return false
   }
@@ -15,6 +12,14 @@ class Model extends ORM.ActiveRecord {
    * @returns Array[] List of unique keys
    */
   static get UNIQUE_KEYS () {
+    return []
+  }
+
+  /**
+   * Returns list of fulltext keys
+   * @returns Array[] List of unique keys
+   */
+  static get FULLTEXT_INDEXES () {
     return []
   }
 
