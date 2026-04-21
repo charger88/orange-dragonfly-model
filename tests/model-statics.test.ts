@@ -163,17 +163,17 @@ test('formatOutput accepts mode parameter', () => {
 
 // ============ accessible ============
 
-test('accessible returns true when mode is null', async () => {
+test('accessible returns true when mode is null', async() => {
   const m = new Model({ id: 1 })
   expect(await m.accessible(null)).toBe(true)
 })
 
-test('accessible returns true when mode is null and user is provided', async () => {
+test('accessible returns true when mode is null and user is provided', async() => {
   const m = new Model({ id: 1 })
   expect(await m.accessible({ id: 1 }, null)).toBe(true)
 })
 
-test('accessible returns false when mode is non-null', async () => {
+test('accessible returns false when mode is non-null', async() => {
   const m = new Model({ id: 1 })
   expect(await m.accessible(null, 'read')).toBe(false)
   expect(await m.accessible(null, 'write')).toBe(false)

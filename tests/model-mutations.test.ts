@@ -1,9 +1,11 @@
 import Model from '../src/model'
 import TestModel from './test-model'
-import OrangeDatabaseInputValidationError from '../src/orange-database-input-validation-error'
-import OrangeDatabaseModelError from '../src/orange-database-model-error'
-import OrangeDatabaseModelRuntimeError from '../src/orange-database-model-runtime-error'
-import OrangeDatabaseModelAccessError from '../src/orange-database-model-access-error'
+import {
+  OrangeDatabaseInputValidationError,
+  OrangeDatabaseModelAccessError,
+  OrangeDatabaseModelError,
+  OrangeDatabaseModelRuntimeError,
+} from '../src/errors'
 import { ActiveRecord } from 'orange-dragonfly-orm'
 import type { ODValidatorRulesSchema } from 'orange-dragonfly-validator'
 
@@ -27,13 +29,13 @@ test('OrangeDatabaseInputValidationError info setter replaces info object', () =
 
 // ============ create() ============
 
-test('create throws OrangeDatabaseInputValidationError for unknown field', async () => {
+test('create throws OrangeDatabaseInputValidationError for unknown field', async() => {
   await expect(
-    TestModel.create({ username: 'x', uuid: 'a'.repeat(40), unknown_field: 'z' })
+    TestModel.create({ username: 'x', uuid: 'a'.repeat(40), unknown_field: 'z' }),
   ).rejects.toThrow(OrangeDatabaseInputValidationError)
 })
 
-test('create error for unknown field includes field name in info', async () => {
+test('create error for unknown field includes field name in info', async() => {
   try {
     await TestModel.create({ username: 'x', uuid: 'a'.repeat(40), bad_field: 'z' })
     fail('expected to throw')
@@ -43,13 +45,13 @@ test('create error for unknown field includes field name in info', async () => {
   }
 })
 
-test('create throws for restricted field (id)', async () => {
+test('create throws for restricted field (id)', async() => {
   await expect(
-    TestModel.create({ id: 1, username: 'x', uuid: 'a'.repeat(40) })
+    TestModel.create({ id: 1, username: 'x', uuid: 'a'.repeat(40) }),
   ).rejects.toThrow(OrangeDatabaseInputValidationError)
 })
 
-test('create error for restricted field includes field name in info', async () => {
+test('create error for restricted field includes field name in info', async() => {
   try {
     await TestModel.create({ id: 1, username: 'x', uuid: 'a'.repeat(40) })
     fail('expected to throw')
@@ -59,18 +61,18 @@ test('create error for restricted field includes field name in info', async () =
   }
 })
 
-test('create with IGNORE_EXTRA_FIELDS skips unknown fields and calls save', async () => {
+test('create with IGNORE_EXTRA_FIELDS skips unknown fields and calls save', async() => {
   class IgnoreModel extends TestModel {
     static override get ignore_extra_fields(): boolean { return true }
   }
-  jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function (this: any) { return this })
+  jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function(this: any) { return this })
   const result = await IgnoreModel.create({ username: 'test', uuid: 'a'.repeat(40), extra: 'ignored' })
   expect(result).toBeInstanceOf(IgnoreModel)
   expect(result.data).not.toHaveProperty('extra')
 })
 
-test('create success instantiates model and calls save', async () => {
-  const mockSave = jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function (this: any) { return this })
+test('create success instantiates model and calls save', async() => {
+  const mockSave = jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function(this: any) { return this })
   const result = await TestModel.create({ username: 'tester', uuid: 'a'.repeat(40) })
   expect(result).toBeInstanceOf(TestModel)
   expect(mockSave).toHaveBeenCalled()
@@ -78,18 +80,18 @@ test('create success instantiates model and calls save', async () => {
 
 // ============ update() ============
 
-test('update throws when object has no id', async () => {
+test('update throws when object has no id', async() => {
   const t = new TestModel({ username: 'test', uuid: 'a'.repeat(40) })
   await expect(t.update({ username: 'new' })).rejects.toThrow(OrangeDatabaseModelRuntimeError)
   await expect(t.update({ username: 'new' })).rejects.toThrow('You can update saved object only')
 })
 
-test('update throws for unknown field', async () => {
+test('update throws for unknown field', async() => {
   const t = new TestModel(validData)
   await expect(t.update({ unknown_field: 'value' })).rejects.toThrow(OrangeDatabaseInputValidationError)
 })
 
-test('update error for unknown field includes field name in info', async () => {
+test('update error for unknown field includes field name in info', async() => {
   const t = new TestModel(validData)
   try {
     await t.update({ bad_field: 'value' })
@@ -100,23 +102,23 @@ test('update error for unknown field includes field name in info', async () => {
   }
 })
 
-test('update throws for restricted field (id)', async () => {
+test('update throws for restricted field (id)', async() => {
   const t = new TestModel(validData)
   await expect(t.update({ id: 2 })).rejects.toThrow(OrangeDatabaseInputValidationError)
 })
 
-test('update with IGNORE_EXTRA_FIELDS skips unknown fields', async () => {
+test('update with IGNORE_EXTRA_FIELDS skips unknown fields', async() => {
   class IgnoreModel extends TestModel {
     static override get ignore_extra_fields(): boolean { return true }
   }
-  const mockSave = jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function (this: any) { return this })
+  const mockSave = jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function(this: any) { return this })
   const t = new IgnoreModel(validData)
   await t.update({ username: 'new', extra: 'ignored' })
   expect(mockSave).toHaveBeenCalledWith({ username: 'new' })
 })
 
-test('update success calls save with the filtered data', async () => {
-  const mockSave = jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function (this: any) { return this })
+test('update success calls save with the filtered data', async() => {
+  const mockSave = jest.spyOn(ActiveRecord.prototype as any, 'save').mockImplementation(async function(this: any) { return this })
   const t = new TestModel(validData)
   await t.update({ username: 'new_name' })
   expect(mockSave).toHaveBeenCalledWith({ username: 'new_name' })
@@ -124,12 +126,12 @@ test('update success calls save with the filtered data', async () => {
 
 // ============ checkUniqueness() ============
 
-test('checkUniqueness returns true when UNIQUE_KEYS is empty', async () => {
+test('checkUniqueness returns true when UNIQUE_KEYS is empty', async() => {
   const t = new TestModel(validData)
   expect(await t.checkUniqueness()).toBe(true)
 })
 
-test('checkUniqueness returns true when all keys are unique', async () => {
+test('checkUniqueness returns true when all keys are unique', async() => {
   class UniqueModel extends TestModel {
     static override get unique_keys(): string[][] { return [['username']] }
   }
@@ -138,7 +140,7 @@ test('checkUniqueness returns true when all keys are unique', async () => {
   expect(await t.checkUniqueness()).toBe(true)
 })
 
-test('checkUniqueness returns false when a key is not unique', async () => {
+test('checkUniqueness returns false when a key is not unique', async() => {
   class UniqueModel extends TestModel {
     static override get unique_keys(): string[][] { return [['username']] }
   }
@@ -147,7 +149,7 @@ test('checkUniqueness returns false when a key is not unique', async () => {
   expect(await t.checkUniqueness()).toBe(false)
 })
 
-test('checkUniqueness throws OrangeDatabaseInputValidationError in exception_mode when not unique', async () => {
+test('checkUniqueness throws OrangeDatabaseInputValidationError in exception_mode when not unique', async() => {
   class UniqueModel extends TestModel {
     static override get unique_keys(): string[][] { return [['username']] }
   }
@@ -158,7 +160,7 @@ test('checkUniqueness throws OrangeDatabaseInputValidationError in exception_mod
   expect(err.info).toHaveProperty('username')
 })
 
-test('checkUniqueness passes ignore_null to isUnique', async () => {
+test('checkUniqueness passes ignore_null to isUnique', async() => {
   class UniqueModel extends TestModel {
     static override get unique_keys(): string[][] { return [['username']] }
   }
@@ -170,7 +172,7 @@ test('checkUniqueness passes ignore_null to isUnique', async () => {
 
 // ============ _preSave() ============
 
-test('_preSave calls checkUniqueness(true, true) and validate', async () => {
+test('_preSave calls checkUniqueness(true, true) and validate', async() => {
   const t = new TestModel(validData)
   const checkUniq = jest.spyOn(t, 'checkUniqueness').mockResolvedValue(true)
   const validate = jest.spyOn(t as any, 'validate').mockResolvedValue(undefined)
@@ -179,7 +181,7 @@ test('_preSave calls checkUniqueness(true, true) and validate', async () => {
   expect(validate).toHaveBeenCalled()
 })
 
-test('_preSave with IGNORE_EXTRA_FIELDS strips unknown keys from data', async () => {
+test('_preSave with IGNORE_EXTRA_FIELDS strips unknown keys from data', async() => {
   class IgnoreModel extends Model {
     static override get ignore_extra_fields(): boolean { return true }
     static override get validation_rules(): ODValidatorRulesSchema {
@@ -199,7 +201,7 @@ test('_preSave with IGNORE_EXTRA_FIELDS strips unknown keys from data', async ()
 
 // ============ validate() ============
 
-test('validate throws when validation_rules returns null', async () => {
+test('validate throws when validation_rules returns null', async() => {
   class BrokenModel extends Model {
     static override get validation_rules(): any { return null }
   }
@@ -208,17 +210,17 @@ test('validate throws when validation_rules returns null', async () => {
   await expect(t.validate()).rejects.toThrow('Validation rules are not defined for model BrokenModel')
 })
 
-test('validate succeeds with valid data', async () => {
+test('validate succeeds with valid data', async() => {
   const t = new TestModel(validData)
   await expect(t.validate()).resolves.toBeUndefined()
 })
 
-test('validate throws when parse fails due to wrong type', async () => {
+test('validate throws when parse fails due to wrong type', async() => {
   const t = new TestModel({ id: 1, username: 123, uuid: 'a'.repeat(40) })
   await expect(t.validate()).rejects.toThrow()
 })
 
-test('validate throws OrangeDatabaseInputValidationError on custom_validation errors', async () => {
+test('validate throws OrangeDatabaseInputValidationError on custom_validation errors', async() => {
   class StrictModel extends TestModel {
     override async custom_validation() {
       return { username: 'Username is taken' }
@@ -230,12 +232,12 @@ test('validate throws OrangeDatabaseInputValidationError on custom_validation er
   expect(err.info).toHaveProperty('username', 'Username is taken')
 })
 
-test('validate custom_validation returning null causes no error', async () => {
+test('validate custom_validation returning null causes no error', async() => {
   const t = new TestModel(validData)
   await expect(t.validate()).resolves.toBeUndefined()
 })
 
-test('validate custom_validation returning empty object causes no error', async () => {
+test('validate custom_validation returning empty object causes no error', async() => {
   class EmptyValidationModel extends TestModel {
     override async custom_validation() { return {} }
   }
@@ -243,7 +245,7 @@ test('validate custom_validation returning empty object causes no error', async 
   await expect(t.validate()).resolves.toBeUndefined()
 })
 
-test('validate coerces boolean field from 1 to true', async () => {
+test('validate coerces boolean field from 1 to true', async() => {
   class BoolModel extends Model {
     static override get validation_rules(): ODValidatorRulesSchema {
       return {
@@ -257,7 +259,7 @@ test('validate coerces boolean field from 1 to true', async () => {
   expect(t.data.active).toBe(true)
 })
 
-test('validate coerces boolean field from 0 to false', async () => {
+test('validate coerces boolean field from 0 to false', async() => {
   class BoolModel extends Model {
     static override get validation_rules(): ODValidatorRulesSchema {
       return {
@@ -271,7 +273,7 @@ test('validate coerces boolean field from 0 to false', async () => {
   expect(t.data.active).toBe(false)
 })
 
-test('validate throws when parent relation FK is set but relation not found', async () => {
+test('validate throws when parent relation FK is set but relation not found', async() => {
   const t = new TestModel({ ...validData, test_model_id: 5 })
   jest.spyOn(ActiveRecord.prototype as any, 'rel').mockResolvedValue(null)
   const err = await t.validate().catch(e => e)
@@ -279,28 +281,28 @@ test('validate throws when parent relation FK is set but relation not found', as
   expect(err.info).toHaveProperty('test_model_id', 'Parent object not found')
 })
 
-test('validate skips parent relation check when FK is null', async () => {
+test('validate skips parent relation check when FK is null', async() => {
   const t = new TestModel({ ...validData, test_model_id: null })
   const relSpy = jest.spyOn(ActiveRecord.prototype as any, 'rel')
   await t.validate()
   expect(relSpy).not.toHaveBeenCalled()
 })
 
-test('validate skips parent relation check when FK is 0', async () => {
+test('validate skips parent relation check when FK is 0', async() => {
   const t = new TestModel({ ...validData, test_model_id: 0 })
   const relSpy = jest.spyOn(ActiveRecord.prototype as any, 'rel')
   await t.validate()
   expect(relSpy).not.toHaveBeenCalled()
 })
 
-test('validate skips parent relation check when FK field not in data', async () => {
+test('validate skips parent relation check when FK field not in data', async() => {
   const t = new TestModel(validData)
   const relSpy = jest.spyOn(ActiveRecord.prototype as any, 'rel')
   await t.validate()
   expect(relSpy).not.toHaveBeenCalled()
 })
 
-test('validate succeeds when parent relation FK is set and relation is found', async () => {
+test('validate succeeds when parent relation FK is set and relation is found', async() => {
   const t = new TestModel({ ...validData, test_model_id: 2 })
   jest.spyOn(ActiveRecord.prototype as any, 'rel').mockResolvedValue(new TestModel(validData))
   await expect(t.validate()).resolves.toBeUndefined()
@@ -308,7 +310,7 @@ test('validate succeeds when parent relation FK is set and relation is found', a
 
 // ============ findAndCheckAccessOrDie() ============
 
-test('findAndCheckAccessOrDie returns object when found and accessible', async () => {
+test('findAndCheckAccessOrDie returns object when found and accessible', async() => {
   const t = new TestModel(validData)
   jest.spyOn(TestModel, 'find').mockResolvedValue(t as any)
   jest.spyOn(t, 'accessible').mockResolvedValue(true)
@@ -316,13 +318,13 @@ test('findAndCheckAccessOrDie returns object when found and accessible', async (
   expect(result).toBe(t)
 })
 
-test('findAndCheckAccessOrDie throws when object not found', async () => {
+test('findAndCheckAccessOrDie throws when object not found', async() => {
   jest.spyOn(TestModel, 'find').mockResolvedValue(null)
   await expect(TestModel.findAndCheckAccessOrDie(99, null)).rejects.toThrow(OrangeDatabaseModelRuntimeError)
   await expect(TestModel.findAndCheckAccessOrDie(99, null)).rejects.toThrow('TestModel #99 not found')
 })
 
-test('findAndCheckAccessOrDie throws when object not accessible without mode', async () => {
+test('findAndCheckAccessOrDie throws when object not accessible without mode', async() => {
   const t = new TestModel(validData)
   jest.spyOn(TestModel, 'find').mockResolvedValue(t as any)
   jest.spyOn(t, 'accessible').mockResolvedValue(false)
@@ -330,7 +332,7 @@ test('findAndCheckAccessOrDie throws when object not accessible without mode', a
   await expect(TestModel.findAndCheckAccessOrDie(1, null)).rejects.toThrow('is not accessible')
 })
 
-test('findAndCheckAccessOrDie throws with mode in error message when not accessible', async () => {
+test('findAndCheckAccessOrDie throws with mode in error message when not accessible', async() => {
   const t = new TestModel(validData)
   jest.spyOn(TestModel, 'find').mockResolvedValue(t as any)
   jest.spyOn(t, 'accessible').mockResolvedValue(false)
@@ -340,7 +342,7 @@ test('findAndCheckAccessOrDie throws with mode in error message when not accessi
 
 // ============ getExtendedOutput() edge cases ============
 
-test('getExtendedOutput throws for a restricted relation', async () => {
+test('getExtendedOutput throws for a restricted relation', async() => {
   class RestrictedModel extends TestModel {
     static override get restricted_for_output(): string[] { return ['child_test'] }
   }
@@ -349,7 +351,7 @@ test('getExtendedOutput throws for a restricted relation', async () => {
   await expect(t.getExtendedOutput(['child_test'])).rejects.toThrow('not allowed for extended output')
 })
 
-test('getExtendedOutput handles array relation data', async () => {
+test('getExtendedOutput handles array relation data', async() => {
   const data2 = { id: 2, username: 'admin', uuid: '0987654321098765432109876543210987654321' }
   const data3 = { id: 3, username: 'mod', uuid: '1111111111111111111111111111111111111111' }
   const t = new TestModel(validData)
@@ -363,7 +365,7 @@ test('getExtendedOutput handles array relation data', async () => {
   expect((o[':child_test'] as any[])[1].id).toBe(3)
 })
 
-test('getExtendedOutput skips nested relation specifiers at top level', async () => {
+test('getExtendedOutput skips nested relation specifiers at top level', async() => {
   const t = new TestModel(validData)
   t.relations.child_test = null
   const o = await t.getExtendedOutput(['child_test', 'child_test:sub'])
