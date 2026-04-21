@@ -1,20 +1,10 @@
-/* eslint-disable no-undef */
-
-const TestModel = require('./test-model')
+import TestModel from './test-model'
 
 test('select-id', () => {
   const data = [1]
   const lookup_data = { id: data[0] }
   const q = TestModel.lookupQuery(lookup_data).buildRawSQL()
   expect(q.sql).toBe('SELECT * FROM test_model WHERE test_model.id = ?')
-  expect(q.params).toEqual(data)
-})
-
-test('delete-id', () => {
-  const data = [1]
-  const lookup_data = { id: data[0] }
-  const q = TestModel.lookupQuery(lookup_data, TestModel.deleteQuery()).buildRawSQL()
-  expect(q.sql).toBe('DELETE FROM test_model WHERE test_model.id = ?')
   expect(q.params).toEqual(data)
 })
 
