@@ -245,6 +245,23 @@ test('validate custom_validation returning empty object causes no error', async(
   await expect(t.validate()).resolves.toBeUndefined()
 })
 
+test('validate applies default values for missing required fields to data', async() => {
+  class DefaultedModel extends Model {
+    static override get validation_rules(): ODValidatorRulesSchema {
+      return {
+        id: { required: false, type: 'integer', min: 1 },
+        status: { required: true, type: 'string', default: 'draft' },
+      }
+    }
+  }
+
+  const t = new DefaultedModel({ id: 1 })
+  expect(t.data).not.toHaveProperty('status')
+
+  await expect(t.validate()).resolves.toBeUndefined()
+  expect(t.data).toHaveProperty('status', 'draft')
+})
+
 test('validate coerces boolean field from 1 to true', async() => {
   class BoolModel extends Model {
     static override get validation_rules(): ODValidatorRulesSchema {

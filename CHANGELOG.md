@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.1] - 4/22/2026
+
+### Changed
+
+- Restored validation behavior so default values for missing required fields are applied to `data`
+
 ## [0.12.0] - 4/21/2026
 
 ### Added

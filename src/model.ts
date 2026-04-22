@@ -250,7 +250,7 @@ export default class Model extends ActiveRecord {
         }
       }
     }
-    parse(rules, this.data, { strictMode: false })
+    this.data = parse(rules, this.data, { strictMode: false })
     const custom_validation_errors = await this.custom_validation()
     if (custom_validation_errors && Object.keys(custom_validation_errors).length) {
       const ex = new OrangeDatabaseInputValidationError('Validation failed')
