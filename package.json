@@ -1,23 +1,50 @@
 {
   "name": "orange-dragonfly-model",
-  "version": "0.11.5",
-  "description": "Orange Dragonfly Model",
-  "main": "index.js",
+  "version": "0.12.1",
+  "description": "Orange Dragonfly Model - advanced active record ORM model class for Orange Dragonfly framework",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/charger88/orange-dragonfly-model.git"
   },
   "scripts": {
+    "build": "tsup",
     "test": "jest",
-    "lint": "eslint ./"
+    "test:coverage": "jest --coverage",
+    "eslint": "eslint ./src ./tests",
+    "eslint:fix": "eslint --fix ./src ./tests",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "framework"
+    "database",
+    "active-record",
+    "orm"
   ],
   "author": {
-    "name": "Michael Kelner",
+    "name": "Mike Kelner",
     "email": "mikhail.kelner@gmail.com",
-    "url": "https://michaelkelner.com/"
+    "url": "https://www.michaelkelner.com/"
   },
   "license": "ISC",
   "bugs": {
@@ -25,15 +52,19 @@
   },
   "homepage": "https://github.com/charger88/orange-dragonfly-model#readme",
   "dependencies": {
-    "orange-dragonfly-orm": "^0.7.21",
-    "orange-dragonfly-validator": "^0.7.8"
+    "orange-dragonfly-orm": "^0.8.0",
+    "orange-dragonfly-validator": "^1.0.2"
   },
   "devDependencies": {
-    "eslint": "^7.32.0",
-    "eslint-config-standard": "^16.0.3",
-    "eslint-plugin-import": "^2.24.1",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^5.1.0",
-    "jest": "^25.5.4"
+    "@eslint/js": "^10.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^18.19.130",
+    "eslint": "^10.0.1",
+    "globals": "^17.3.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
   }
 }

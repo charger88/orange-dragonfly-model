@@ -1,11 +1,9 @@
-/* eslint-disable no-undef */
-
-const TestModel = require('./test-model')
+import TestModel from './test-model'
 
 const data = {
   id: 1,
   username: 'tester',
-  uuid: '1234567890123456789012345678901234567890'
+  uuid: '1234567890123456789012345678901234567890',
 }
 
 test('output', () => {
@@ -17,7 +15,7 @@ test('output', () => {
   expect(o.constant_value).toBe('QWERTY')
 })
 
-test('output-extended', async () => {
+test('output-extended', async() => {
   const t = new TestModel(data)
   const o = await t.getExtendedOutput()
   expect(o.id).toBe(data.id)
@@ -26,7 +24,7 @@ test('output-extended', async () => {
   expect(o.constant_value).toBe('QWERTY')
 })
 
-test('output-extended-rel-empty', async () => {
+test('output-extended-rel-empty', async() => {
   const t = new TestModel(data)
   t.relations.child_test = null
   const o = await t.getExtendedOutput(['child_test'])
@@ -37,11 +35,11 @@ test('output-extended-rel-empty', async () => {
   expect(o[':child_test']).toEqual(null)
 })
 
-test('output-extended-rel-data', async () => {
+test('output-extended-rel-data', async() => {
   const data2 = {
     id: 2,
     username: 'admin',
-    uuid: '0987654321098765432109876543210987654321'
+    uuid: '0987654321098765432109876543210987654321',
   }
   const t = new TestModel(data)
   const t2 = new TestModel(data2)
@@ -51,8 +49,8 @@ test('output-extended-rel-data', async () => {
   expect(o.username).toBe(data.username)
   expect(o.uuid).toBe(data.uuid)
   expect(o.constant_value).toBe('QWERTY')
-  expect(o[':child_test'].id).toBe(data2.id)
-  expect(o[':child_test'].username).toBe(data2.username)
-  expect(o[':child_test'].uuid).toBe(data2.uuid)
-  expect(o[':child_test'].constant_value).toBe('QWERTY')
+  expect((o[':child_test'] as any).id).toBe(data2.id)
+  expect((o[':child_test'] as any).username).toBe(data2.username)
+  expect((o[':child_test'] as any).uuid).toBe(data2.uuid)
+  expect((o[':child_test'] as any).constant_value).toBe('QWERTY')
 })
