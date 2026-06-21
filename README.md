@@ -7,6 +7,7 @@ An active-record model class for the Orange Dragonfly framework. Extends [`orang
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Defining a model](#defining-a-model)
+- [Typed data access](#typed-data-access)
 - [Field restrictions](#field-restrictions)
 - [CRUD operations](#crud-operations)
 - [Querying](#querying)
@@ -168,6 +169,65 @@ static override get ignore_extra_fields(): boolean {
 ```
 
 Default: `false` — unknown fields throw `OrangeDatabaseInputValidationError`.
+
+---
+
+## Typed data access
+
+By default `this.data` is typed as `Record<string, unknown>`, so accessing individual fields gives `unknown`. The exported `ModelData<S>` utility type derives a precise TypeScript type directly from a `validation_rules` schema, making field access fully type-safe.
+
+**Three steps to opt in:**
+
+1. Declare the schema as a module-level `const` using `as const satisfies ODValidatorRulesSchema` to preserve literal type information.
+2. Return that const from `validation_rules` (drop the explicit `: ODValidatorRulesSchema` return-type annotation so TypeScript keeps the narrow type).
+3. Add `declare data: ModelData<typeof schema>` inside the subclass.
+
+```typescript
+import Model, { type ModelData } from 'orange-dragonfly-model'
+import type { ODValidatorRulesSchema } from 'orange-dragonfly-validator'
+
+const articleSchema = {
+  id:         { required: false, type: 'integer', min: 1 },
+  title:      { required: true,  type: 'string',  min: 1, max: 255 },
+  body:       { required: true,  type: 'string',  min: 1 },
+  author_id:  { required: true,  type: 'integer', min: 1 },
+  published:  { required: false, type: 'boolean' },
+  created_at: { required: false, type: 'integer' },
+  updated_at: { required: false, type: 'integer' },
+} as const satisfies ODValidatorRulesSchema
+
+class Article extends Model {
+  static override get validation_rules() { return articleSchema }
+  declare data: ModelData<typeof articleSchema>
+}
+
+// Field access is now fully typed:
+const article = await Article.find(1)
+article.data.title      // string
+article.data.published  // boolean
+article.data.author_id  // number
+article.data.missing    // TypeScript error — field not in schema
+```
+
+**Schema type → TypeScript type mapping:**
+
+| Validator type | TypeScript type |
+|---|---|
+| `'string'` | `string` |
+| `'integer'`, `'number'` | `number` |
+| `'boolean'` | `boolean` |
+| `'null'` | `null` |
+| `'object'` | `Record<string, unknown>` |
+| `'array'` | `unknown[]` |
+| `'function'` | `(...args: unknown[]) => unknown` |
+
+When `type` is an array (e.g. `['string', 'null']`), the result is the union of the corresponding TypeScript types (`string | null`).
+
+**Why `as const` is required.** Without it, TypeScript widens the string literal `'integer'` to the broad type `string`, and `ModelData` cannot resolve the mapping. `satisfies ODValidatorRulesSchema` validates the object against the schema without widening the inferred type.
+
+**Why the schema lives outside the class.** `declare data: ModelData<typeof articleSchema>` inside the class body needs to reference a name that is already in scope. A static getter cannot be referenced this way without a circular reference.
+
+The `declare data` line has no runtime cost — it is a type-only declaration that narrows the `Record<string, unknown>` inherited from `ActiveRecord`.
 
 ---
 

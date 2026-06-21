@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0] - 6/21/2026
+
+### Added
+
+- `ModelData<S>` utility type and `IModelConstructor` interface for improved TypeScript support.
+
+### Changed
+
+- Validation errors from `orange-dragonfly-validator` are now re-thrown as `OrangeDatabaseInputValidationError` with per-field messages in both `validate()` and `lookupQuery()`.
+
+### Fixed
+
+- Relation-not-found error was not being thrown due to incorrect conditional placement.
+
 ## [0.12.1] - 4/22/2026
 
 ### Changed
