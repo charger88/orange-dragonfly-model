@@ -1,11 +1,81 @@
-import { ActiveRecord, Relation, SelectQuery } from 'orange-dragonfly-orm'
-import { parse, type ODValidatorRuleSchema, type ODValidatorRulesSchema } from 'orange-dragonfly-validator'
+import { ActiveRecord, type DeleteQuery, type InsertQuery, type IQueryBuilder, type Relation, SelectQuery, type UpdateQuery } from 'orange-dragonfly-orm'
+import { ODValidatorException, parse, type ODValidatorRuleSchema, type ODValidatorRulesSchema } from 'orange-dragonfly-validator'
+
+type ValidatorTSType<T extends string> =
+  T extends 'string' ? string :
+  T extends 'integer' | 'number' ? number :
+  T extends 'boolean' ? boolean :
+  T extends 'null' ? null :
+  T extends 'object' ? Record<string, unknown> :
+  T extends 'array' ? unknown[] :
+  T extends 'function' ? (...args: unknown[]) => unknown :
+  unknown
+
+type FieldTS<R extends ODValidatorRuleSchema> =
+  R['type'] extends string
+    ? ValidatorTSType<R['type']>
+    : R['type'] extends readonly (infer U extends string)[]
+      ? ValidatorTSType<U>
+      : unknown
+
+/**
+ * Converts an `ODValidatorRulesSchema` to a TypeScript object type.
+ * Requires the schema to be declared with `as const satisfies ODValidatorRulesSchema`
+ * to preserve literal type information.
+ *
+ * @example
+ * const schema = { name: { type: 'string', required: true } } as const satisfies ODValidatorRulesSchema
+ * class MyModel extends Model {
+ *   static override get validation_rules() { return schema }
+ *   declare data: ModelData<typeof schema>
+ * }
+ */
+export type ModelData<S extends ODValidatorRulesSchema> = {
+  [K in Exclude<keyof S, '@' | '#' | '*'>]: S[K] extends ODValidatorRuleSchema ? FieldTS<S[K]> : never
+}
+
 import {
   OrangeDatabaseInputValidationError,
   OrangeDatabaseModelAccessError,
   OrangeDatabaseModelError,
   OrangeDatabaseModelRuntimeError,
 } from './errors'
+
+export interface IModelConstructor {
+  new(data?: Record<string, unknown>): Model
+  readonly id_key: string
+  readonly table: string
+  readonly name: string
+  readonly special_fields: string[]
+  readonly available_relations: Record<string, Relation>
+  readonly ignore_extra_fields: boolean
+  readonly unique_keys: string[][]
+  readonly fulltext_indexes: string[][]
+  /** @deprecated Use `ignore_extra_fields` instead */
+  readonly IGNORE_EXTRA_FIELDS: boolean
+  /** @deprecated Use `unique_keys` instead */
+  readonly UNIQUE_KEYS: string[][]
+  /** @deprecated Use `fulltext_indexes` instead */
+  readonly FULLTEXT_INDEXES: string[][]
+  readonly validation_rules: ODValidatorRulesSchema
+  readonly restricted_for_output: string[]
+  readonly restricted_for_lookup: string[]
+  readonly restricted_for_create: string[]
+  readonly restricted_for_update: string[]
+  resetRegisteredModels(): void
+  insertQuery(): InsertQuery
+  selectQuery(include_deleted?: boolean): IQueryBuilder<Model>
+  updateQuery(include_deleted?: boolean): UpdateQuery
+  deleteQuery(include_deleted?: boolean): DeleteQuery
+  loadRelations(objects: Model[], relations?: string[] | null): Promise<Model[]>
+  find(id: unknown, include_deleted?: boolean): Promise<Model | null>
+  all(include_deleted?: boolean): Promise<Model[]>
+  lookupQuery(data: Record<string, unknown>, basicQuery?: SelectQuery | null): SelectQuery<Model>
+  create(data: Record<string, unknown>): Promise<Model>
+  findAndCheckAccessOrDie(id: unknown, user: unknown, mode?: string | null): Promise<Model>
+  model(class_name: string): IModelConstructor
+  registerModel(model_class: IModelConstructor): IModelConstructor
+}
 
 export default class Model extends ActiveRecord {
   private get _mCls(): typeof Model {
@@ -105,29 +175,44 @@ export default class Model extends ActiveRecord {
    * @param data
    * @param basicQuery Query to be used for adding conditions. By default a new SelectQuery is created.
    */
-  static lookupQuery(data: Record<string, unknown>, basicQuery: SelectQuery | null = null): SelectQuery {
-    const rules = this.validation_rules
-    const q = basicQuery ?? this.selectQuery()
+  static lookupQuery<T extends Model>(
+    this: abstract new (data?: Record<string, unknown>) => T,
+    data: Record<string, unknown>,
+    basicQuery: SelectQuery | null = null,
+  ): SelectQuery<T> {
+    const cls = this as unknown as typeof Model
+    const rules = cls.validation_rules
+    const q = (basicQuery ?? cls.selectQuery()) as SelectQuery<T>
     const filtered_rules: ODValidatorRulesSchema = {}
     for (const field of Object.keys(data)) {
       if (!Object.hasOwn(rules, field)) {
-        if (this.ignore_extra_fields) {
+        if (cls.ignore_extra_fields) {
           continue
         }
         const ex = new OrangeDatabaseInputValidationError('Parameters error')
-        ex.info[field] = `Field "${field}" is not described for model ${this.name}`
+        ex.info[field] = `Field "${field}" is not described for model ${cls.name}`
         throw ex
       }
-      if (this.restricted_for_lookup.includes(field)) {
+      if (cls.restricted_for_lookup.includes(field)) {
         const ex = new OrangeDatabaseInputValidationError('Parameters error')
-        ex.info[field] = `Field "${field}" is restricted for searching model ${this.name}`
+        ex.info[field] = `Field "${field}" is restricted for searching model ${cls.name}`
         throw ex
       }
       q.where(field, data[field])
       const rule = rules[field] as ODValidatorRuleSchema
       filtered_rules[field] = Array.isArray(data[field]) ? { type: 'array', children: { '*': rule } } : rule
     }
-    parse(filtered_rules, data, { strictMode: false })
+    try {
+      parse(filtered_rules, data, { strictMode: false })
+    } catch (e) {
+      if (e instanceof ODValidatorException) {
+        const message = `Model ${cls.name} lookup rules validation failed`
+        console.error(message, e.info)
+        throw new OrangeDatabaseInputValidationError(message)
+      } else {
+        throw e
+      }
+    }
     return q
   }
 
@@ -135,26 +220,30 @@ export default class Model extends ActiveRecord {
    * Creates object
    * @param data
    */
-  static async create(data: Record<string, unknown>): Promise<Model> {
-    const rules = this.validation_rules
+  static async create<T extends Model>(
+    this: abstract new (data?: Record<string, unknown>) => T,
+    data: Record<string, unknown>,
+  ): Promise<T> {
+    const cls = this as unknown as typeof Model
+    const rules = cls.validation_rules
     const new_data: Record<string, unknown> = {}
     for (const field of Object.keys(data)) {
       if (!Object.hasOwn(rules, field)) {
-        if (this.ignore_extra_fields) {
+        if (cls.ignore_extra_fields) {
           continue
         }
         const ex = new OrangeDatabaseInputValidationError('Parameters error')
-        ex.info[field] = `Field "${field}" is not described for model ${this.name}`
+        ex.info[field] = `Field "${field}" is not described for model ${cls.name}`
         throw ex
       }
-      if (this.restricted_for_create.includes(field)) {
+      if (cls.restricted_for_create.includes(field)) {
         const ex = new OrangeDatabaseInputValidationError('Parameters error')
-        ex.info[field] = `Field "${field}" is restricted for creating model ${this.name}`
+        ex.info[field] = `Field "${field}" is restricted for creating model ${cls.name}`
         throw ex
       }
       new_data[field] = data[field]
     }
-    const Cls = this as unknown as new (data?: Record<string, unknown>) => Model
+    const Cls = this as unknown as new (data?: Record<string, unknown>) => T
     return (new Cls(new_data)).save()
   }
 
@@ -250,7 +339,21 @@ export default class Model extends ActiveRecord {
         }
       }
     }
-    this.data = parse(rules, this.data, { strictMode: false })
+    try {
+      this.data = parse(rules, this.data, { strictMode: false })
+    } catch (e) {
+      if (e instanceof ODValidatorException) {
+        const message = `Model ${cls.name} rules validation failed`
+        console.error(message, e.info)
+        const ex = new OrangeDatabaseInputValidationError(message)
+        for (const [key, msgs] of Object.entries(e.info as Record<string, string | string[]>)) {
+          ex.info[key] = Array.isArray(msgs) ? msgs[0] : msgs
+        }
+        throw ex
+      } else {
+        throw e
+      }
+    }
     const custom_validation_errors = await this.custom_validation()
     if (custom_validation_errors && Object.keys(custom_validation_errors).length) {
       const ex = new OrangeDatabaseInputValidationError('Validation failed')
@@ -268,12 +371,20 @@ export default class Model extends ActiveRecord {
           }
         }
       }
-      if (relation_errors.length) {
-        const ex = new OrangeDatabaseInputValidationError(`Some relations of the ${cls.name} are not found`)
-        for (const param of relation_errors) ex.info[param] = 'Parent object not found'
-        throw ex
-      }
     }
+    if (relation_errors.length) {
+      const ex = new OrangeDatabaseInputValidationError(`Some relations of the ${cls.name} are not found`)
+      for (const param of relation_errors) ex.info[param] = 'Parent object not found'
+      throw ex
+    }
+  }
+
+  static override model(class_name: string): IModelConstructor {
+    return super.model(class_name) as unknown as IModelConstructor
+  }
+
+  static override registerModel(model_class: Parameters<typeof ActiveRecord.registerModel>[0]): typeof Model {
+    return super.registerModel(model_class) as unknown as typeof Model
   }
 
   /**
@@ -282,13 +393,19 @@ export default class Model extends ActiveRecord {
    * @param user
    * @param mode
    */
-  static async findAndCheckAccessOrDie(id: unknown, user: unknown, mode: string | null = null): Promise<Model> {
-    const obj = await this.find(id) as Model | null
+  static async findAndCheckAccessOrDie<T extends Model>(
+    this: abstract new (data?: Record<string, unknown>) => T,
+    id: number,
+    user: unknown,
+    mode: string | null = null,
+  ): Promise<T> {
+    const cls = this as unknown as typeof Model
+    const obj = await cls.find(id) as T | null
     if (!obj) {
-      throw new OrangeDatabaseModelRuntimeError(`${this.name} #${id} not found`)
+      throw new OrangeDatabaseModelRuntimeError(`${cls.name} #${id} not found`)
     }
     if (!(await obj.accessible(user, mode))) {
-      throw new OrangeDatabaseModelAccessError(`${this.name} #${id} is not accessible${mode ? ` for ${mode}` : ''}`)
+      throw new OrangeDatabaseModelAccessError(`${cls.name} #${id} is not accessible${mode ? ` for ${mode}` : ''}`)
     }
     return obj
   }
@@ -299,7 +416,7 @@ export default class Model extends ActiveRecord {
    * @param mode
    */
    
-  async accessible(user: unknown, mode: string | null = null): Promise<boolean> {
+  async accessible(_user: unknown, mode: string | null = null): Promise<boolean> {
     return mode === null
   }
 
@@ -316,8 +433,7 @@ export default class Model extends ActiveRecord {
    * Format output
    * @param mode
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  formatOutput(mode: string | null = null): Record<string, unknown> {
+  formatOutput(_mode: string | null = null): Record<string, unknown> {
     return this.output
   }
 

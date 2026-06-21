@@ -1,6 +1,6 @@
 {
   "name": "orange-dragonfly-model",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Orange Dragonfly Model - advanced active record ORM model class for Orange Dragonfly framework",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -52,7 +52,7 @@
   },
   "homepage": "https://github.com/charger88/orange-dragonfly-model#readme",
   "dependencies": {
-    "orange-dragonfly-orm": "^0.8.0",
+    "orange-dragonfly-orm": "file:./../orange-dragonfly-db",
     "orange-dragonfly-validator": "^1.0.2"
   },
   "devDependencies": {
