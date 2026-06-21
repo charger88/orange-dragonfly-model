@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.1] - 6/21/2026
+
+- Dependency fix
+
 ## [0.13.0] - 6/21/2026
 
 ### Added

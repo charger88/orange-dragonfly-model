@@ -52,7 +52,7 @@
   },
   "homepage": "https://github.com/charger88/orange-dragonfly-model#readme",
   "dependencies": {
-    "orange-dragonfly-orm": "file:./../orange-dragonfly-db",
+    "orange-dragonfly-orm": "^0.9.0",
     "orange-dragonfly-validator": "^1.0.2"
   },
   "devDependencies": {
